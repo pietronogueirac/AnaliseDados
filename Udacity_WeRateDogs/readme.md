@@ -1,5 +1,5 @@
 ## Detalhes do projeto
--Data wrangling, que consiste em:
+- Data wrangling, que consiste em:
 	- Coletar dados
 	- Avaliar dados
 	- Limpar dados
