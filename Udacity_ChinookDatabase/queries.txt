@@ -1,0 +1,108 @@
+/ * Query 1 - Primeiro insight  */
+
+SELECT G.Name as "Gênero", Count(*) as "Quantidade em Vendas"
+FROM Genre G
+INNER JOIN Track T
+ON T.GenreID = G.GenreID 
+INNER JOIN InvoiceLine IL
+ON IL.TrackID =  T.TrackID
+INNER JOIN Invoice I
+ON I.InvoiceID =  IL.InvoiceID
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 10
+
+
+/ * Query 2 - Segundo insight  */
+
+SELECT 	I.BillingCountry as "País", Count(*) as "Quantidade de Vendas Realizadas"
+from Invoice I  
+INNER JOIN InvoiceLine IL
+ON I.InvoiceID =  IL.InvoiceID
+INNER JOIN Track T
+ON IL.TrackID =  T.TrackID
+INNER JOIN Genre G
+ON T.GenreID = G.GenreID  and G.Name = (
+					SELECT Name
+					FROM (
+								SELECT G.Name as Name, Count(*)
+								FROM Genre G
+								INNER JOIN Track T
+								ON T.GenreID = G.GenreID 
+								INNER JOIN InvoiceLine IL
+								ON IL.TrackID =  T.TrackID
+								INNER JOIN Invoice I
+								ON I.InvoiceID =  IL.InvoiceID
+								GROUP BY 1
+								ORDER BY 2 DESC
+								LIMIT 1))
+group by BillingCountry
+ORDER BY 2 Desc
+LIMIT 10;
+
+/ * Query 3 - Terceiro insight  */
+
+SELECT CASE WHEN strftime('%m',I.InvoiceDate) = '01' Then 'Janeiro'
+			WHEN strftime('%m',I.InvoiceDate) = '02' Then 'Fevereiro'
+			WHEN strftime('%m',I.InvoiceDate) = '03' Then 'Março'
+			WHEN strftime('%m',I.InvoiceDate) = '04' Then 'Abril'
+			WHEN strftime('%m',I.InvoiceDate) = '05' Then 'Maio'
+			WHEN strftime('%m',I.InvoiceDate) = '06' Then 'Junho'
+			WHEN strftime('%m',I.InvoiceDate) = '07' Then 'Julho'
+			WHEN strftime('%m',I.InvoiceDate) = '08' Then 'Agosto'
+			WHEN strftime('%m',I.InvoiceDate) = '09' Then 'Setembro'
+			WHEN strftime('%m',I.InvoiceDate) = '10' Then 'Outubro'
+			WHEN strftime('%m',I.InvoiceDate) = '11' Then 'Novembro'
+			ELSE 'Dezembro' END AS 'Mes',
+round(SUM(I.total)) as 'Vendas em USD'
+from Invoice I  
+INNER JOIN InvoiceLine IL
+ON I.InvoiceID =  IL.InvoiceID
+INNER JOIN Track T
+ON IL.TrackID =  T.TrackID
+INNER JOIN Genre G
+ON T.GenreID = G.GenreID  and G.Name = (
+					SELECT Name
+					FROM (
+								SELECT G.Name as Name, SUM(I.total)
+								FROM Genre G
+								INNER JOIN Track T
+								ON T.GenreID = G.GenreID 
+								INNER JOIN InvoiceLine IL
+								ON IL.TrackID =  T.TrackID
+								INNER JOIN Invoice I
+								ON I.InvoiceID =  IL.InvoiceID
+								GROUP BY 1
+								ORDER BY 2 DESC
+								LIMIT 1))
+group by 1
+ORDER BY strftime('%m',InvoiceDate);
+
+/ * Query 4 - Quarto insight  */
+
+SELECT A.Name as "Nome do Artista", SUM(I.total) as "Total de Vendas"
+FROM Track T
+JOIN Album Al
+ON Al.AlbumID = T.AlbumID
+JOIN Artist A
+ON A.ArtistID = Al.ArtistID
+INNER JOIN  InvoiceLine IL
+ON   Il.TrackID = T.TrackID
+INNER JOIN Invoice I
+ON I.InvoiceID = IL.InvoiceID 
+		and strftime('%m',InvoiceDate) = (  SELECT Mes
+											FROM (	SELECT strftime('%m',InvoiceDate) as Mes, SUM(total)
+													FROM Invoice 
+													Group by 1
+													Order by 2 desc
+													LIMIT 1))
+
+		and I.BillingCountry = (	SELECT Pais
+									FROM (		SELECT BillingCountry as Pais, SUM(Total)
+												FROM Invoice 
+												group by BillingCountry
+												order by 2 desc
+												LIMIT 1))
+GROUP BY 1
+ORDER BY 2 Desc	
+LIMIT 7
